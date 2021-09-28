@@ -26,13 +26,13 @@
   },
 
   "variables": {
-    "appServicePlanName": "[concat(parameters('EngineerAlias'),'-ASPG')]",
-    "appName": "[concat(parameters('EngineerAlias'),'-APPG')]",
+    "appServicePlanName": "[concat(parameters('EngineerAlias'),'-G-ASP')]",
+    "appName": "[concat(parameters('EngineerAlias'),'-G-APP')]",
     "appServicePlanSku": "S1",
 
     "GlobalNetworkSecurityGroup": "Global-NSG-G",
 
-    "vnetName1": "[concat(parameters('EngineerAlias'), '-Gnet1')]",
+    "vnetName1": "[concat(parameters('EngineerAlias'), '-G-Vnet1')]",
     "location1": "WestUS",
     "vnet1AddressPrefix": "10.211.0.0/16",
     "subnet1Name1": "default",
@@ -40,7 +40,7 @@
     "subnet1Name2": "apps",
     "subnet1AddressPrefix2": "10.211.2.0/24",
 
-    "vnetName2": "[concat(parameters('EngineerAlias'), '-Gnet2')]",
+    "vnetName2": "[concat(parameters('EngineerAlias'), '-G-Vnet2')]",
     "location2": "WestUS",
     "vnet2AddressPrefix": "10.222.0.0/16",
     "subnet2Name1": "default",
