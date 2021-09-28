@@ -1,0 +1,467 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "EngineerAlias": {
+      "type": "string",
+      "defaultValue": "MsAlias",
+      "metadata": {
+        "description": "Engineer MS Alias"
+      }
+    },
+    "adminUsername": {
+      "type": "string",
+      "defaultvalue": "ConfigAdmin",
+      "metadata": {
+        "description": "User Name for VMs"
+      }
+    },
+    "adminPassword": {
+      "type": "string",
+      "defaultvalue": "passWord99",
+      "metadata": {
+        "description": "Password for Admin User"
+      }
+    }
+  },
+
+  "variables": {
+    "appServicePlanName": "[concat(parameters('EngineerAlias'),'-ASP')]",
+    "appName": "[concat(parameters('EngineerAlias'),'-APP')]",
+    "appServicePlanSku": "S1",
+
+    "GlobalNetworkSecurityGroup": "Global-NSG",
+
+    "vnetName1": "[concat(parameters('EngineerAlias'), '-Vnet1')]",
+    "location1": "WestUS",
+    "vnet1AddressPrefix": "10.211.0.0/16",
+    "subnet1Name1": "default",
+    "subnet1AddressPrefix1": "10.211.1.0/24",
+    "subnet1Name2": "apps",
+    "subnet1AddressPrefix2": "10.211.2.0/24",
+
+    "vnetName2": "[concat(parameters('EngineerAlias'), '-Vnet2')]",
+    "location2": "WestUS",
+    "vnet2AddressPrefix": "10.222.0.0/16",
+    "subnet2Name1": "default",
+    "subnet2AddressPrefix1": "10.222.1.0/24",
+
+    "vm1Name": "[concat(parameters('EngineerAlias'), '-V1-vm1')]",
+    "nic1Name": "[concat(parameters('EngineerAlias'), '-V1-vm1nic')]",
+    "publicIPAddress1Name": "[concat(parameters('EngineerAlias'), '-V1-vm1ip')]",
+
+    "vm2Name": "[concat(parameters('EngineerAlias'), '-V2-vm2')]",
+    "nic2Name": "[concat(parameters('EngineerAlias'), '-V2-vm2nic')]",
+    "publicIPAddress2Name": "[concat(parameters('EngineerAlias'), '-V2-vm2ip')]",
+
+    "VpnGw1Name": "[concat(parameters('EngineerAlias'), '-V1-GM1')]",
+    "Gw1IPAddressName": "[concat(parameters('EngineerAlias'), '-V1-GM1ip')]",
+    "Gw1subnetName": "GatewaySubnet",
+    "Gw1subnetAddress": "10.211.0.0/24",
+
+    "VpnGw2Name": "[concat(parameters('EngineerAlias'), '-V1-GM2')]",
+    "Gw2IPAddressName": "[concat(parameters('EngineerAlias'), '-V1-GM2ip')]",
+    "Gw2subnetName": "GatewaySubnet",
+    "Gw2subnetAddress": "10.222.0.0/24"
+  },
+  "resources": [
+    //Virtual Networks and NSG
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2020-05-01",
+      "name": "[variables('GlobalNetworkSecurityGroup')]",
+      "location": "[variables('Location1')]",
+      "tags": {
+      },
+      "properties": {
+        "securityRules": [
+          {
+            "name": "Amy-Rule-101",
+            "properties": {
+              "description": "",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 101,
+              "direction": "Inbound",
+              "sourcePortRanges": [],
+              "destinationPortRanges": [],
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "[variables('vnetName1')]",
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2019-12-01",
+      "location": "[variables('location1')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('GlobalNetworkSecurityGroup'))]"
+      ],
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[variables('vnet1AddressPrefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('GW1subnetName')]",
+            "properties": {
+              "addressPrefix": "[variables('Gw1subnetAddress')]"
+            }
+          },
+          {
+            "name": "[variables('subnet1Name1')]",
+            "properties": {
+              "addressPrefix": "[variables('subnet1AddressPrefix1')]",
+              "networkSecurityGroup": {
+                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('GlobalNetworkSecurityGroup'))]"
+              }
+            }
+          },
+          {
+            "name": "[variables('subnet1Name2')]",
+            "properties": {
+              "addressPrefix": "[variables('subnet1AddressPrefix2')]",
+              "networkSecurityGroup": {
+                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('GlobalNetworkSecurityGroup'))]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "[variables('vnetName2')]",
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2019-12-01",
+      "location": "[variables('location2')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('GlobalNetworkSecurityGroup'))]"
+      ],
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[variables('vnet2AddressPrefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('GW2subnetName')]",
+            "properties": {
+              "addressPrefix": "[variables('Gw2subnetAddress')]"
+            }
+          },
+          {
+            "name": "[variables('subnet2Name1')]",
+            "properties": {
+              "addressPrefix": "[variables('subnet2AddressPrefix1')]",
+              "networkSecurityGroup": {
+                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('GlobalNetworkSecurityGroup'))]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "[variables('appServicePlanName')]",
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2018-02-01",
+      "location": "[variables('location1')]",
+      "properties": {},
+      "sku": {
+        "name": "[variables('appServicePlanSku')]"
+      },
+      "kind": "app"
+    },
+    {
+      "name": "[variables('appName')]",
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2018-11-01",
+      "location": "[variables('location1')]",
+      "kind": "app",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverFarms', variables('appServicePlanName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName1'))]"
+      ],
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverFarms', variables('appServicePlanName'))]"
+      }
+    },
+    //VPN Gateway 1  ----------------------------------------------------------------------------
+    {
+      "name": "[variables('Gw1IPAddressName')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2019-02-01",
+      "location": "[variables('location1')]",
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "publicIPAddressVersion": "IPv4"
+      }
+    },
+    {
+      "name": "[variables('VpnGw1Name')]",
+      "type": "Microsoft.Network/virtualNetworkGateways",
+      "apiVersion": "2019-04-01",
+      "location": "[variables('location1')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName1'))]",
+        "[resourceId('Microsoft.Network/publicIPAddresses/', variables('Gw1IPAddressName'))]"
+      ],
+      "properties": {
+        "gatewayType": "Vpn",
+        "ipConfigurations": [
+          {
+            "name": "default",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName1'), variables('GW1subnetName'))]"
+              },
+              "publicIpAddress": {
+                "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIPAddresses', variables('Gw1IPAddressName'))]"
+              }
+            }
+          }
+        ],
+        "vpnType": "RouteBased",
+        "vpnGatewayGeneration": "Generation1",
+        "sku": {
+          "name": "VpnGw1",
+          "tier": "VpnGw1"
+        }
+      }
+    },
+    //VPN Gateway 2  ----------------------------------------------------------------------------
+    {
+      "name": "[variables('Gw2IPAddressName')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2019-02-01",
+      "location": "[variables('location2')]",
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "publicIPAddressVersion": "IPv4"
+      }
+    },
+    {
+      "name": "[variables('VpnGw2Name')]",
+      "type": "Microsoft.Network/virtualNetworkGateways",
+      "apiVersion": "2019-04-01",
+      "location": "[variables('location2')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName2'))]",
+        "[resourceId('Microsoft.Network/publicIPAddresses/', variables('Gw2IPAddressName'))]"
+      ],
+      "properties": {
+        "gatewayType": "Vpn",
+        "ipConfigurations": [
+          {
+            "name": "default",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName2'), variables('GW2subnetName'))]"
+              },
+              "publicIpAddress": {
+                "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIPAddresses', variables('Gw2IPAddressName'))]"
+              }
+            }
+          }
+        ],
+        "vpnType": "RouteBased",
+        "vpnGatewayGeneration": "Generation1",
+        "sku": {
+          "name": "VpnGw1",
+          "tier": "VpnGw1"
+        }
+      }
+    },
+    //Virtual Machines 1, 2 and 3 --------------------------------------------------------------------
+    {
+      "name": "[variables('publicIPAddress1Name')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2020-05-01",
+      "location": "[variables('location1')]",
+      "sku": { "name": "Basic" },
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "publicIPAddressVersion": "IPv4"
+      }
+    },
+    {
+      "name": "[variables('nic1Name')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2020-05-01",
+      "location": "[variables('location1')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName1'))]",
+        "[resourceId('Microsoft.Network/publicIPAddresses/', variables('publicIPAddress1Name'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName1'), variables('subnet1Name1'))]"
+              },
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIpAddress": {
+                "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIPAddresses', variables('publicIpAddress1Name'))]"
+              },
+              "networkSecurityGroup": {
+                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('GlobalNetworkSecurityGroup'))]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "[variables('vm1Name')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2020-12-01",
+      "location": "[variables('location1')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName1'))]",
+        "[resourceId('Microsoft.Network/publicIPAddresses/', variables('publicIPAddress1Name'))]",
+        "[resourceId('Microsoft.Network/networkInterfaces',variables('nic1Name'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "Standard_DS1_v2"
+        },
+        "storageProfile": {
+          "osDisk": {
+            "createOption": "fromImage",
+            "managedDisk": {
+              "storageAccountType": "Premium_LRS"
+            }
+          },
+          "imageReference": {
+            "publisher": "MicrosoftWindowsServer",
+            "offer": "WindowsServer",
+            "sku": "2019-Datacenter",
+            "version": "latest"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('nic1Name'))]"
+            }
+          ]
+        },
+        "osProfile": {
+          "computerName": "[variables('vm1Name')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]",
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": true,
+            "provisionVmAgent": true,
+            "patchSettings": {
+              "patchMode": "AutomaticByOS"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "[variables('publicIPAddress2Name')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2020-05-01",
+      "location": "[variables('location2')]",
+      "sku": { "name": "Basic" },
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "publicIPAddressVersion": "IPv4"
+      }
+    },
+    {
+      "name": "[variables('nic2Name')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2020-05-01",
+      "location": "[variables('location2')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName2'))]",
+        "[resourceId('Microsoft.Network/publicIPAddresses/', variables('publicIPAddress2Name'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig2",
+            "properties": {
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName2'), variables('subnet2Name1'))]"
+              },
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIpAddress": {
+                "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIPAddresses', variables('publicIpAddress2Name'))]"
+              },
+              "networkSecurityGroup": {
+                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('GlobalNetworkSecurityGroup'))]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "[variables('vm2Name')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2020-12-01",
+      "location": "[variables('location2')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName2'))]",
+        "[resourceId('Microsoft.Network/publicIPAddresses/', variables('publicIPAddress2Name'))]",
+        "[resourceId('Microsoft.Network/networkInterfaces',variables('nic2Name'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "Standard_DS1_v2"
+        },
+        "storageProfile": {
+          "osDisk": {
+            "createOption": "fromImage",
+            "managedDisk": {
+              "storageAccountType": "Premium_LRS"
+            }
+          },
+          "imageReference": {
+            "publisher": "MicrosoftWindowsServer",
+            "offer": "WindowsServer",
+            "sku": "2019-Datacenter",
+            "version": "latest"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('nic2Name'))]"
+            }
+          ]
+        },
+        "osProfile": {
+          "computerName": "[variables('vm2Name')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]",
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": true,
+            "provisionVmAgent": true,
+            "patchSettings": {
+              "patchMode": "AutomaticByOS"
+            }
+          }
+        }
+      }
+    }
+  ]
+}
