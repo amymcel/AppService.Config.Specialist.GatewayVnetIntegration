@@ -26,13 +26,13 @@
   },
 
   "variables": {
-    "appServicePlanName": "[concat(parameters('EngineerAlias'),'-ASP')]",
-    "appName": "[concat(parameters('EngineerAlias'),'-APP')]",
+    "appServicePlanName": "[concat(parameters('EngineerAlias'),'-ASPG')]",
+    "appName": "[concat(parameters('EngineerAlias'),'-APPG')]",
     "appServicePlanSku": "S1",
 
-    "GlobalNetworkSecurityGroup": "Global-NSG",
+    "GlobalNetworkSecurityGroup": "Global-NSG-G",
 
-    "vnetName1": "[concat(parameters('EngineerAlias'), '-Vnet1')]",
+    "vnetName1": "[concat(parameters('EngineerAlias'), '-Gnet1')]",
     "location1": "WestUS",
     "vnet1AddressPrefix": "10.211.0.0/16",
     "subnet1Name1": "default",
@@ -40,27 +40,27 @@
     "subnet1Name2": "apps",
     "subnet1AddressPrefix2": "10.211.2.0/24",
 
-    "vnetName2": "[concat(parameters('EngineerAlias'), '-Vnet2')]",
+    "vnetName2": "[concat(parameters('EngineerAlias'), '-Gnet2')]",
     "location2": "WestUS",
     "vnet2AddressPrefix": "10.222.0.0/16",
     "subnet2Name1": "default",
     "subnet2AddressPrefix1": "10.222.1.0/24",
 
-    "vm1Name": "[concat(parameters('EngineerAlias'), '-V1-vm1')]",
-    "nic1Name": "[concat(parameters('EngineerAlias'), '-V1-vm1nic')]",
-    "publicIPAddress1Name": "[concat(parameters('EngineerAlias'), '-V1-vm1ip')]",
+    "vm1Name": "[concat(parameters('EngineerAlias'), '-G1-vm1')]",
+    "nic1Name": "[concat(parameters('EngineerAlias'), '-G1-vm1nic')]",
+    "publicIPAddress1Name": "[concat(parameters('EngineerAlias'), '-G1-vm1ip')]",
 
-    "vm2Name": "[concat(parameters('EngineerAlias'), '-V2-vm2')]",
-    "nic2Name": "[concat(parameters('EngineerAlias'), '-V2-vm2nic')]",
-    "publicIPAddress2Name": "[concat(parameters('EngineerAlias'), '-V2-vm2ip')]",
+    "vm2Name": "[concat(parameters('EngineerAlias'), '-G2-vm2')]",
+    "nic2Name": "[concat(parameters('EngineerAlias'), '-G2-vm2nic')]",
+    "publicIPAddress2Name": "[concat(parameters('EngineerAlias'), '-G2-vm2ip')]",
 
-    "VpnGw1Name": "[concat(parameters('EngineerAlias'), '-V1-GM1')]",
-    "Gw1IPAddressName": "[concat(parameters('EngineerAlias'), '-V1-GM1ip')]",
+    "VpnGw1Name": "[concat(parameters('EngineerAlias'), '-G1-GM1')]",
+    "Gw1IPAddressName": "[concat(parameters('EngineerAlias'), '-G1-GM1ip')]",
     "Gw1subnetName": "GatewaySubnet",
     "Gw1subnetAddress": "10.211.0.0/24",
 
-    "VpnGw2Name": "[concat(parameters('EngineerAlias'), '-V1-GM2')]",
-    "Gw2IPAddressName": "[concat(parameters('EngineerAlias'), '-V1-GM2ip')]",
+    "VpnGw2Name": "[concat(parameters('EngineerAlias'), '-G1-GM2')]",
+    "Gw2IPAddressName": "[concat(parameters('EngineerAlias'), '-G1-GM2ip')]",
     "Gw2subnetName": "GatewaySubnet",
     "Gw2subnetAddress": "10.222.0.0/24"
   },
@@ -316,13 +316,13 @@
               "privateIPAllocationMethod": "Dynamic",
               "publicIpAddress": {
                 "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIPAddresses', variables('publicIpAddress1Name'))]"
-              },
-              "networkSecurityGroup": {
-                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('GlobalNetworkSecurityGroup'))]"
               }
             }
           }
-        ]
+        ],
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('GlobalNetworkSecurityGroup'))]"
+        }
       }
     },
     {
@@ -405,13 +405,13 @@
               "privateIPAllocationMethod": "Dynamic",
               "publicIpAddress": {
                 "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIPAddresses', variables('publicIpAddress2Name'))]"
-              },
-              "networkSecurityGroup": {
-                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('GlobalNetworkSecurityGroup'))]"
               }
             }
           }
-        ]
+        ],
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('GlobalNetworkSecurityGroup'))]"
+        }
       }
     },
     {
